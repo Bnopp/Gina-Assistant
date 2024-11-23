@@ -1,0 +1,815 @@
+[
+    {
+        "type": "function",
+        "function": {
+            "name": "fetch_available_devices",
+            "description": "Retrieve the list of available Spotify devices for the user.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "args": {
+                        "type": "object",
+                        "description": "Additional parameters if required in the future.",
+                        "properties": {}
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "fetch_playback_state",
+            "description": "Retrieves the current Spotify playback state, providing detailed information about the playing track, device, playback status, and context. This includes the track name, artist, album, playback position, shuffle and repeat settings, device type and volume, and contextual information if playing from an album, playlist, or artist. Ideal for monitoring Spotify playback details.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "transfer_playback",
+            "description": "Transfers Spotify playback to a specified device.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "device_id": {
+                        "type": "string",
+                        "description": "The ID of the device to transfer playback to."
+                    }
+                },
+                "required": [
+                    "device_id"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "start_playback",
+            "description": "Starts Spotify playback with specified track URIs or context URI, optionally retrying with a default device if no active device is found.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "uris": {
+                        "type": "array",
+                        "description": "List of track URIs to play.",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "context_uri": {
+                        "type": "string",
+                        "description": "Spotify URI of the context (album, artist, or playlist) to play."
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "pause_playback",
+            "description": "Pauses Spotify playback for the current active device.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "args": {
+                        "type": "object",
+                        "description": "Optional argument placeholder for future parameters.",
+                        "properties": {}
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "skip_to_next",
+            "description": "Skips to the next track in the current Spotify playback queue.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "args": {
+                        "type": "object",
+                        "description": "Optional argument placeholder for future parameters.",
+                        "properties": {}
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "skip_to_previous",
+            "description": "Skips to the previous track in the current Spotify playback queue.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "args": {
+                        "type": "object",
+                        "description": "Optional argument placeholder for future parameters.",
+                        "properties": {}
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "seek_to_position",
+            "description": "Seeks to a specified position (in milliseconds) within the current Spotify track.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "position_ms": {
+                        "type": "integer",
+                        "description": "The position in milliseconds to seek to within the current track."
+                    }
+                },
+                "required": [
+                    "position_ms"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "set_repeat_mode",
+            "description": "Sets the repeat mode for Spotify playback (track, context, or off).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "state": {
+                        "type": "string",
+                        "description": "The repeat mode for playback: 'track' to repeat the current track, 'context' to repeat the current context (album or playlist), or 'off' to disable repeat."
+                    }
+                },
+                "required": [
+                    "state"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "set_playback_volume",
+            "description": "Sets the playback volume for Spotify, as a percentage of maximum volume.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "volume_percent": {
+                        "type": "integer",
+                        "description": "The volume level as a percentage (0-100) to set for Spotify playback."
+                    }
+                },
+                "required": [
+                    "volume_percent"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "toggle_playlist_shuffle",
+            "description": "Toggles the shuffle state for Spotify playback.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "state": {
+                        "type": "boolean",
+                        "description": "The shuffle state to set: true to enable shuffle, false to disable it."
+                    }
+                },
+                "required": [
+                    "state"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_user_queue",
+            "description": "Retrieves the current Spotify playback queue for the user.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "args": {
+                        "type": "object",
+                        "description": "Optional argument placeholder for future parameters.",
+                        "properties": {}
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "add_item_to_playback_queue",
+            "description": "Adds a specified item (song) to the Spotify playback queue.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "uri": {
+                        "type": "string",
+                        "description": "The URI of the item (track) to add to the playback queue."
+                    }
+                },
+                "required": [
+                    "uri"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_track",
+            "description": "Searches for tracks, artists, and albums on Spotify based on a query, with optional filters.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "q": {
+                        "type": "string",
+                        "description": "The search query string. Supports field filters like artist, album, year, and genre."
+                    },
+                    "filters": {
+                        "type": "object",
+                        "description": "Optional search field filters applied to the query to specify what the user is looking for.",
+                        "properties": {
+                            "artist": {
+                                "type": "string",
+                                "description": "Filter results to a specific artist."
+                            },
+                            "album": {
+                                "type": "string",
+                                "description": "Filter results to a specific album."
+                            },
+                            "year": {
+                                "type": "string",
+                                "description": "Filter results by release year or range (e.g., '2000', '1990-1999')."
+                            },
+                            "genre": {
+                                "type": "string",
+                                "description": "Filter results to a specific genre."
+                            }
+                        }
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of results to return. Defaults to 10."
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "Type of search to perform: 'track', 'artist', 'album', or any combination. Defaults to 'track,artist,album'."
+                    }
+                },
+                "required": [
+                    "q"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_playlist",
+            "description": "Retrieves essential information from a specified Spotify playlist.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "playlist_id": {
+                        "type": "string",
+                        "description": "The ID of the Spotify playlist to retrieve information from."
+                    }
+                },
+                "required": [
+                    "playlist_id"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "change_playlist_details",
+            "description": "Updates details of a specified Spotify playlist, such as name, description, privacy, and collaboration settings.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "playlist_id": {
+                        "type": "string",
+                        "description": "The ID of the Spotify playlist to modify."
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "New name for the playlist.",
+                        "nullable": true
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "New description for the playlist.",
+                        "nullable": true
+                    },
+                    "public": {
+                        "type": "boolean",
+                        "description": "Whether the playlist should be public.",
+                        "nullable": true
+                    },
+                    "collaborative": {
+                        "type": "boolean",
+                        "description": "Whether the playlist should be collaborative.",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "playlist_id"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_playlist_items",
+            "description": "Retrieves tracks from a specified Spotify playlist.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "playlist_id": {
+                        "type": "string",
+                        "description": "The ID of the Spotify playlist to retrieve items from."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of items to retrieve. Default is 100."
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Starting point for items. Default is 0."
+                    }
+                },
+                "required": [
+                    "playlist_id"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "add_item_to_playlist",
+            "description": "Adds a specified item (track) to a Spotify playlist.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "playlist_id": {
+                        "type": "string",
+                        "description": "The ID of the Spotify playlist to add the item to."
+                    },
+                    "uri": {
+                        "type": "string",
+                        "description": "The URI of the item (track) to add to the playlist."
+                    }
+                },
+                "required": [
+                    "playlist_id",
+                    "uri"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "remove_playlist_items",
+            "description": "Removes specified items (tracks) from a Spotify playlist.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "playlist_id": {
+                        "type": "string",
+                        "description": "The ID of the Spotify playlist to remove items from."
+                    },
+                    "uris": {
+                        "type": "array",
+                        "description": "List of URIs for items to be removed from the playlist.",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "playlist_id",
+                    "uris"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_current_user_playlists",
+            "description": "Retrieves a list of playlists belonging to the current Spotify user.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "offset": {
+                        "type": "integer",
+                        "description": "Starting index for playlists to retrieve. Default is 0."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of playlists to retrieve per request. Default is 20."
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_user_playlists",
+            "description": "Retrieves a list of playlists belonging to a specified Spotify user.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "user_id": {
+                        "type": "string",
+                        "description": "The ID of the Spotify user whose playlists are being retrieved."
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Starting index for playlists to retrieve. Default is 0."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of playlists to retrieve per request. Default is 20."
+                    }
+                },
+                "required": [
+                    "user_id"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_playlist",
+            "description": "Creates a new Spotify playlist for the current user with optional customization.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the new playlist."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Optional description for the new playlist.",
+                        "nullable": true
+                    },
+                    "public": {
+                        "type": "boolean",
+                        "description": "Whether the playlist is public. Default is true.",
+                        "nullable": true
+                    },
+                    "collaborative": {
+                        "type": "boolean",
+                        "description": "Whether the playlist is collaborative. Default is false.",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_featured_playlists",
+            "description": "Retrieves a list of featured playlists on Spotify, with optional filters for limit, country, and locale.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "The number of playlists to retrieve (1-50). Default is 10."
+                    },
+                    "country": {
+                        "type": "string",
+                        "description": "Optional two-letter country code for localizing featured playlists."
+                    },
+                    "locale": {
+                        "type": "string",
+                        "description": "Optional locale for language-specific featured playlists (e.g., 'en_US')."
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "add_custom_cover_image",
+            "description": "Adds a custom cover image to a Spotify playlist from a URL or a local file path.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "playlist_id": {
+                        "type": "string",
+                        "description": "The ID of the playlist to add the image to."
+                    },
+                    "image_url": {
+                        "type": "string",
+                        "description": "The URL of the image to use as the cover.",
+                        "nullable": true
+                    },
+                    "image_path": {
+                        "type": "string",
+                        "description": "Local file path of the image to use as the cover.",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "playlist_id"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "user_playlist_unfollow",
+            "description": "Unfollows (unsubscribes from) a specified Spotify playlist. Is also considered as removing/deleting the playlist from the user's library.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "playlist_id": {
+                        "type": "string",
+                        "description": "The ID of the playlist to unfollow."
+                    }
+                },
+                "required": [
+                    "playlist_id"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_track",
+            "description": "Retrieves detailed information about a specified Spotify track.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "track_id": {
+                        "type": "string",
+                        "description": "The ID of the Spotify track to retrieve information from."
+                    }
+                },
+                "required": [
+                    "track_id"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_user_saved_tracks",
+            "description": "Retrieves a list of tracks saved by the current Spotify user, with optional pagination.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of saved tracks to retrieve, between 1 and 50. Default is 20."
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Starting index for saved tracks retrieval. Default is 0."
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "save_track_for_user",
+            "description": "Saves a track to the current user's Spotify library.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "track_id": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "description": "ID of the track to save."
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "description": "List of track IDs to save."
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "track_id"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "remove_user_saved_tracks",
+            "description": "Removes one or more tracks from the user's Spotify library.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "track_id": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "description": "ID of the track to remove."
+                        },
+                        "description": "List of track IDs to remove."
+                    }
+                },
+                "required": [
+                    "track_id"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "check_user_saved_tracks",
+            "description": "Checks if the current user has saved specific track(s).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "track_id": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "description": "ID of a track to check if it is saved."
+                        },
+                        "description": "List of track IDs to check."
+                    }
+                },
+                "required": [
+                    "track_id"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_track_audio_features",
+            "description": "Retrieves audio features of a specified Spotify track, including details like acousticness, danceability, energy, and key.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "track_id": {
+                        "type": "string",
+                        "description": "The ID of the Spotify track for which to retrieve audio features."
+                    }
+                },
+                "required": [
+                    "track_id"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_album",
+            "description": "Retrieves and formats essential information from a specified Spotify album.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "album_id": {
+                        "type": "string",
+                        "description": "The ID of the Spotify album to retrieve information for."
+                    }
+                },
+                "required": [
+                    "album_id"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_album_tracks",
+            "description": "Retrieves a list of tracks from a specified Spotify album, with detailed track information.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "album_id": {
+                        "type": "string",
+                        "description": "The ID of the Spotify album to retrieve tracks from."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of tracks to retrieve, between 1 and 50.",
+                        "default": 20
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "The starting point for track retrieval within the album.",
+                        "default": 0
+                    }
+                },
+                "required": [
+                    "album_id"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_user_top_items",
+            "description": "Retrieves the current user's top artists or tracks over a specified time range.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "The type of top items to retrieve. Can be either 'artists' or 'tracks'.",
+                        "enum": [
+                            "artists",
+                            "tracks"
+                        ]
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of top items to retrieve, between 1 and 50.",
+                        "default": 10
+                    },
+                    "time_range": {
+                        "type": "string",
+                        "description": "Time range over which to retrieve top items. Options are 'short_term' (4 weeks), 'medium_term' (6 months), and 'long_term' (several years).",
+                        "enum": [
+                            "short_term",
+                            "medium_term",
+                            "long_term"
+                        ],
+                        "default": "medium_term"
+                    }
+                },
+                "required": [
+                    "type"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_current_user_profile",
+            "description": "Retrieve and format essential information about the current Spotify user.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    }
+]
