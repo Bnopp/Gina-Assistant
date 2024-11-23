@@ -19,10 +19,12 @@ def import_methods_from_modules(modules_path: str = Config.get_config_value(key=
     Returns:
         Dict[str, Callable]: A dictionary where the keys are method names and the values are method callables.
     """
+    logger.debug(f"Importing methods from {modules_path}")
     methods: Dict[str, Callable] = {}
 
     for root, dirs, files in os.walk(modules_path):
         for file in files:
+            logger.debug(f"Checking file: {file}")
             if file.endswith(".py"):
                 # Build the module path and name
                 module_path: str = os.path.join(root, file)
@@ -59,12 +61,15 @@ def import_methods_from_modules(modules_path: str = Config.get_config_value(key=
                         logger.error(f"Error creating instance of {main_class}: {e}")
                         continue
 
+                    logger.debug(f"instance: {instance}")
+
                     # Extract methods from the main class
                     for method_name, method in inspect.getmembers(
-                        instance, inspect.isfunction
+                        main_class, inspect.isfunction
                     ):
                         if method_name != "__init__":
-                            methods[method_name] = method
+                            methods[method_name] = getattr(instance, method_name)
+                            logger.debug(f"Added method: {method_name}")
 
     return methods
 

@@ -1,22 +1,21 @@
 import os
-import sys
 import time
 import html
 import json
 import base64
 import socket
-import logging
+from logging import Logger
 import spotipy
 import requests
 import subprocess
 import webbrowser
+from gina.utils.logger import setup_logger
 from typing import Dict, Any, Optional
-from colorama import Fore, Style, init
 from dotenv import load_dotenv, set_key
 from spotipy.oauth2 import SpotifyOAuth
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-
+logger: Logger = setup_logger()
 
 class SpotifyClient:
 
@@ -61,9 +60,12 @@ class SpotifyClient:
             if not self.default_device_id:
                 print("No default device ID found. Fetching available devices...")
                 self.default_device_id = self.fetch_default_device_id()
+            
+            self.auth()
+            print("SpotifyClient initialized successfully.")
                 
         except Exception as e:
-            logging.exception("Failed to initialize SpotifyClient: %s", e)
+            logger.exception("Failed to initialize SpotifyClient: %s", e)
             raise
 
     class WebHandler(BaseHTTPRequestHandler):
@@ -92,11 +94,11 @@ class SpotifyClient:
                     self.wfile.write(b'Authentication successful! You can close this window now.')
                 
                 except IndexError:
-                    logging.error("Invalid callback URL format.")
+                    logger.error("Invalid callback URL format.")
                     self.send_error(400, "Invalid request format.")
                 
                 except Exception as e:
-                    logging.exception("Unexpected error during authentication callback.")
+                    logger.exception("Unexpected error during authentication callback. %s", e)
                     self.send_error(500, "Internal server error.")
 
     def load_cached_token(self, cache_path: str = '.cache') -> Optional[Dict[str, Any]]:
@@ -122,19 +124,21 @@ class SpotifyClient:
         try:
             with open(cache_path, 'r') as f:
                 token_info = json.load(f)
-                logging.info(f"Token information successfully loaded from '{cache_path}'.")
+                logger.debug(
+                    f"Token information successfully loaded from '{cache_path}'."
+                )
                 return token_info
 
         except FileNotFoundError:
-            logging.warning(f"Cache file '{cache_path}' not found. Returning None.")
+            logger.warning(f"Cache file '{cache_path}' not found. Returning None.")
             return None
 
         except json.JSONDecodeError:
-            logging.error(f"Cache file '{cache_path}' is not valid JSON. Returning None.")
+            logger.error(f"Cache file '{cache_path}' is not valid JSON. Returning None.")
             return None
 
         except IOError as e:
-            logging.exception(f"Error reading cache file '{cache_path}': {e}")
+            logger.exception(f"Error reading cache file '{cache_path}': {e}")
             raise
 
     def auth(self):
@@ -158,7 +162,7 @@ class SpotifyClient:
 
             # If no cached token is found, start the authentication flow
             if self.token_info is None:
-                logging.info("No cached token found, initiating new authentication flow.")
+                logger.debug("No cached token found, initiating new authentication flow.")
 
                 # Start HTTP server to listen for callback
                 httpd = HTTPServer(('localhost', 8888), lambda *args, **kwargs: 
@@ -168,21 +172,21 @@ class SpotifyClient:
                 try:
                     auth_url = self.auth_manager.get_authorize_url()
                     webbrowser.open(auth_url)
-                    logging.info("Opened browser for user authentication.")
+                    logger.debug("Opened browser for user authentication.")
                 except Exception as browser_error:
-                    logging.error(f"Failed to open browser for authentication: {browser_error}")
+                    logger.error(f"Failed to open browser for authentication: {browser_error}")
                     raise
 
                 # Handle the incoming request to capture the authorization response
-                logging.info("Waiting for user to authorize application...")
+                print("Waiting for user to authorize application...")
                 httpd.handle_request()
-                logging.info("Authorization process completed.")
+                print("Authorization process completed.")
 
             else:
-                logging.info("Cached token found, skipping authentication.")
+                print("Cached token found, skipping authentication.")
 
         except Exception as e:
-            logging.exception("Error during authentication: %s", e)
+            logger.exception("Error during authentication: %s", e)
             raise
     
     def player(func):
@@ -238,7 +242,7 @@ class SpotifyClient:
             
             # Retry with Spotify app launch if no devices found
             if not devices:
-                logging.warning("No devices found. Launching Spotify app and retrying.")
+                logger.warning("No devices found. Launching Spotify app and retrying.")
                 self.launch_spotify_app()
                 time.sleep(5)  # Adjust delay as needed
                 devices = self.sp.devices().get('devices', [])
@@ -248,13 +252,13 @@ class SpotifyClient:
                 if device['name'].lower() == computer_name:
                     default_device_id = device['id']
                     set_key(".env", "SPOTIFY_DEFAULT_DEVICE_ID", default_device_id)
-                    logging.info(f"Default device ID found and saved: {default_device_id}")
+                    print(f"Default device ID found and saved: {default_device_id}")
                     return default_device_id
 
             raise Exception("No matching device found for this computer.")
             
         except Exception as e:
-            logging.error(f"Error fetching default device ID: {e}")
+            logger.error(f"Error fetching default device ID: {e}")
             raise
 
     @player
@@ -279,11 +283,11 @@ class SpotifyClient:
         """
         try:
             result = self.sp.devices()
-            logging.info("Fetched available Spotify devices")
+            logger.info("Fetched available Spotify devices")
             return f"Result: {result}"
         except Exception as e:
             error_message = f"Error fetching available devices: {str(e)}"
-            logging.error(error_message)
+            logger.error(error_message)
             return "Error fetching available devices."
 
     @player
@@ -308,9 +312,14 @@ class SpotifyClient:
         """
         try:
             # Retrieve current playback information from Spotify
-            playback_info = self.sp.current_playback()
-            if not playback_info or not playback_info.get('item'):
-                logging.info("No active playback found.")
+            playback_info: dict = self.sp.current_playback()
+            if playback_info:
+                print(type(playback_info))
+                if not playback_info.get('item'):
+                    logger.info("No active playback found.")
+                    return "No active playback."
+            else: 
+                logger.info("No active playback found.")
                 return "No active playback."
 
             # Extract main playback details
@@ -333,8 +342,9 @@ class SpotifyClient:
 
             # Context information
             context_info = playback_info.get('context', {})
-            context_type = context_info.get('type', 'Unknown')
-            context_url = context_info.get('external_urls', {}).get('spotify', 'N/A')
+            if context_info:
+                context_type = context_info.get('type', 'Unknown')
+                context_url = context_info.get('external_urls', {}).get('spotify', 'N/A')
 
             # Additional track details
             is_explicit = playback_info['item'].get('explicit', False)
@@ -358,15 +368,20 @@ class SpotifyClient:
                 f"Currently Playing: {'Yes' if is_playing else 'No'}\n"
                 f"Shuffle: {'On' if shuffle_state else 'Off'}\n"
                 f"Repeat Mode: {repeat_state}\n"
-                f"Context (Playing from): {context_type} - {context_url}\n"
                 f"Track URL: {track_url}\n"
             )
 
-            logging.info("Playback information retrieved successfully.")
+            try:
+                if context_type:
+                    result_str += f"Context: {context_type} - {context_url}\n"
+            except NameError:
+                pass
+
+            logger.info("Playback information retrieved successfully.")
             return result_str
 
         except Exception as e:
-            logging.exception("Error retrieving playback state: %s", e)
+            logger.error("Error retrieving playback state: %s", e)
             return "An error occurred while retrieving playback information."
 
     @player
@@ -387,17 +402,17 @@ class SpotifyClient:
         try:
             device_id = args.get("device_id") if args else None
             if not device_id:
-                logging.warning("Device ID not provided for transfer playback.")
+                logger.warning("Device ID not provided for transfer playback.")
                 return "Device ID is required to transfer playback."
 
-            result = self.sp.transfer_playback(device_id)
+            self.sp.transfer_playback(device_id)
             result_message = "Transferred Spotify Playback"
-            logging.info(result_message)
+            logger.info(result_message)
             return result_message
 
         except Exception as e:
             error_message = f"Error transferring playback: {str(e)}"
-            logging.error(error_message)
+            logger.error(error_message)
             return error_message
 
     def launch_spotify_app(self, args = None) -> str:
@@ -423,17 +438,17 @@ class SpotifyClient:
 
             # Attempt to launch Spotify
             subprocess.Popen(spotify_path)
-            logging.info("Spotify app launched successfully.")
+            logger.info("Spotify app launched successfully.")
             return "Spotify app launched successfully."
 
         except FileNotFoundError:
             error_message = "Spotify app not found at the default location."
-            logging.error(error_message)
+            logger.error(error_message)
             return error_message
 
         except Exception as e:
             error_message = f"Error launching Spotify app: {str(e)}"
-            logging.exception(error_message)
+            logger.error(error_message)
             return error_message
 
     @player
@@ -469,45 +484,45 @@ class SpotifyClient:
             # Check result and provide user feedback
             if result is None:
                 result_message = "Started Spotify Playback"
-                logging.info(result_message)
+                logger.info(result_message)
                 return result_message
 
         except Exception as e:
             error_message = "Error starting playback."
-            logging.error(f"{error_message}: {e}")
+            logger.error(f"{error_message}: {e}")
 
             # Check if the error is due to no active device
             if "NO_ACTIVE_DEVICE" in str(e):
                 try:
-                    logging.warning("No active device found. Retrying with default device.")
+                    logger.warning("No active device found. Retrying with default device.")
                     result = self.sp.start_playback(uris=uris, context_uri=context_uri, device_id=self.default_device_id)
 
                     if result is None:
                         result_message = "Started Spotify Playback on default device"
-                        logging.info(result_message)
+                        logger.info(result_message)
                         return result_message
 
                 except Exception as retry_error:
-                    logging.error(f"Retry failed: {retry_error}. Launching Spotify app and retrying playback.")
+                    logger.error(f"Retry failed: {retry_error}. Launching Spotify app and retrying playback.")
                     launch_result = self.launch_spotify_app()
-                    logging.info(f"Spotify app launch result: {launch_result}")
+                    logger.info(f"Spotify app launch result: {launch_result}")
 
                     # Retry with a few attempts and delay
                     for attempt in range(1, 4):
-                        logging.info(f"Attempt {attempt}: Retrying after launching Spotify app...")
+                        logger.info(f"Attempt {attempt}: Retrying after launching Spotify app...")
                         time.sleep(3)
 
                         try:
                             result = self.sp.start_playback(uris=uris, context_uri=context_uri, device_id=self.default_device_id)
                             if result is None:
                                 result_message = "Started Spotify Playback on default device after launching app"
-                                logging.info(result_message)
+                                logger.info(result_message)
                                 return result_message
                         except Exception as final_error:
-                            logging.warning(f"Attempt {attempt} failed: {final_error}")
+                            logger.warning(f"Attempt {attempt} failed: {final_error}")
 
                     final_error_message = "Failed to start playback after launching Spotify app and multiple retry attempts."
-                    logging.error(final_error_message)
+                    logger.error(final_error_message)
                     return final_error_message
 
             return error_message
@@ -536,11 +551,11 @@ class SpotifyClient:
             result = self.sp.pause_playback()
             if result is None:
                 result_message = "Paused Spotify Playback"
-                logging.info(result_message)
+                logger.info(result_message)
                 return result_message
         except Exception as e:
             error_message = f"Error pausing playback: {str(e)}"
-            logging.error(error_message)
+            logger.error(error_message)
             return "Error pausing playback."
 
     @player
@@ -549,11 +564,11 @@ class SpotifyClient:
             result = self.sp.next_track()
             if result is None:
                 result_message = "Skipped to Next song on Spotify"
-                logging.info(result_message)
+                logger.info(result_message)
                 return result_message
         except Exception as e:
             error_message = f"Error skipping to next track: {str(e)}"
-            logging.error(error_message)
+            logger.error(error_message)
             return error_message
 
     @player
@@ -562,11 +577,11 @@ class SpotifyClient:
             result = self.sp.previous_track()
             if result is None:
                 result_message = "Skipped to Previous song on Spotify"
-                logging.info(result_message)
+                logger.info(result_message)
                 return result_message
         except Exception as e:
             error_message = f"Error skipping to previous track: {str(e)}"
-            logging.error(error_message)
+            logger.error(error_message)
             return error_message
 
     @player
@@ -576,11 +591,11 @@ class SpotifyClient:
             result = self.sp.seek_track(position_ms)
             if result is None:
                 result_message = f"Seeked to {position_ms} ms in current Spotify track"
-                logging.info(result_message)
+                logger.info(result_message)
                 return result_message
         except Exception as e:
             error_message = f"Error seeking to position: {str(e)}"
-            logging.error(error_message)
+            logger.error(error_message)
             return error_message
 
     @player
@@ -590,11 +605,11 @@ class SpotifyClient:
             result = self.sp.repeat(state)
             if result is None:
                 result_message = f"Set repeat mode to {state} on Spotify"
-                logging.info(result_message)
+                logger.info(result_message)
                 return result_message
         except Exception as e:
             error_message = f"Error setting repeat mode: {str(e)}"
-            logging.error(error_message)
+            logger.error(error_message)
             return error_message
 
     @player
@@ -604,11 +619,11 @@ class SpotifyClient:
             result = self.sp.volume(volume_percent)
             if result is None:
                 result_message = f"Set playback volume to {volume_percent}% on Spotify"
-                logging.info(result_message)
+                logger.info(result_message)
                 return result_message
         except Exception as e:
             error_message = f"Error setting playback volume: {str(e)}"
-            logging.error(error_message)
+            logger.error(error_message)
             return error_message
 
     @player
@@ -618,11 +633,11 @@ class SpotifyClient:
             result = self.sp.shuffle(state)
             if result is None:
                 result_message = f"Shuffle state set to {state} on Spotify"
-                logging.info(result_message)
+                logger.info(result_message)
                 return result_message
         except Exception as e:
             error_message = f"Error toggling playlist shuffle: {str(e)}"
-            logging.error(error_message)
+            logger.error(error_message)
             return error_message
 
     @player
@@ -631,7 +646,7 @@ class SpotifyClient:
             limit = args.get("limit", 50) if args else 50
             recently_played_info = self.sp.current_user_recently_played(limit=limit)
             if not recently_played_info or not recently_played_info.get('items'):
-                logging.info("No recently played tracks found on Spotify.")
+                logger.info("No recently played tracks found on Spotify.")
                 return "No recently played tracks."
 
             recently_played_tracks_info = []
@@ -646,10 +661,10 @@ class SpotifyClient:
                 )
 
             result_str = '\n'.join(recently_played_tracks_info)
-            logging.info("Fetched Recently Played Spotify Tracks")
+            logger.info("Fetched Recently Played Spotify Tracks")
             return result_str
         except Exception as e:
-            logging.error(f"Error getting recently played tracks: {str(e)}")
+            logger.error(f"Error getting recently played tracks: {str(e)}")
             return "Error getting recently played tracks."
 
     @player
@@ -657,7 +672,7 @@ class SpotifyClient:
         try:
             queue_info = self.sp.queue()
             if not queue_info or not queue_info.get('items'):
-                logging.info("No items in the Spotify queue.")
+                logger.info("No items in the Spotify queue.")
                 return "No items in the queue."
 
             queue_tracks_info = []
@@ -668,10 +683,10 @@ class SpotifyClient:
                 queue_tracks_info.append(f"Track: {track_name}, Artist: {artist_name}, Album: {album_name}")
 
             result_str = '\n'.join(queue_tracks_info)
-            logging.info("Fetched Current Spotify Queue")
+            logger.info("Fetched Current Spotify Queue")
             return result_str
         except Exception as e:
-            logging.error(f"Error getting user queue: {str(e)}")
+            logger.error(f"Error getting user queue: {str(e)}")
             return "Error getting user queue."
 
     @player
@@ -681,10 +696,10 @@ class SpotifyClient:
             result = self.sp.add_to_queue(uri)
             if result is None:
                 result_message = f"Added the song {uri} to the playback queue"
-                logging.info(result_message)
+                logger.info(result_message)
                 return result_message
         except Exception as e:
-            logging.error(f"Error adding item to playback queue: {str(e)}")
+            logger.error(f"Error adding item to playback queue: {str(e)}")
             return "Error adding item to playback queue."
     
     @search
@@ -749,7 +764,7 @@ class SpotifyClient:
             return '\n'.join(output) if output else "No results found."
 
         except Exception as e:
-            logging.error(f"Error searching: {str(e)}")
+            logger.error(f"Error searching: {str(e)}")
             return "Error searching."
     
     @playlists
@@ -802,7 +817,7 @@ class SpotifyClient:
             return result_str
 
         except Exception as e:
-            logging.error(f"Error fetching playlist: {str(e)}")
+            logger.error(f"Error fetching playlist: {str(e)}")
             return "Error fetching playlist."
 
     @playlists
@@ -839,7 +854,7 @@ class SpotifyClient:
             return "Playlist details updated successfully."
 
         except Exception as e:
-            logging.error(f"Error changing playlist details: {str(e)}")
+            logger.error(f"Error changing playlist details: {str(e)}")
             return "Error changing playlist details."
         
     @playlists
@@ -894,7 +909,7 @@ class SpotifyClient:
             return '\n'.join(tracks_info)
 
         except Exception as e:
-            logging.error(f"Error retrieving playlist items: {str(e)}")
+            logger.error(f"Error retrieving playlist items: {str(e)}")
             return "Error retrieving playlist items."
 
     @playlists
@@ -925,7 +940,7 @@ class SpotifyClient:
             return "Item added to the playlist successfully."
 
         except Exception as e:
-            logging.error(f"Error adding item to playlist: {str(e)}")
+            logger.error(f"Error adding item to playlist: {str(e)}")
             return "Error adding item to playlist."
 
     @playlists
@@ -955,11 +970,11 @@ class SpotifyClient:
                 return "URIs must be a non-empty list."
 
             self.sp.playlist_remove_all_occurrences_of_items(playlist_id, uris)
-            logging.info(f"Successfully removed items from playlist {playlist_id}.")
+            logger.info(f"Successfully removed items from playlist {playlist_id}.")
             return "Items removed from the playlist successfully."
 
         except Exception as e:
-            logging.error(f"Error removing playlist items: {str(e)}")
+            logger.error(f"Error removing playlist items: {str(e)}")
             return "Error removing playlist items."
 
     @playlists
@@ -1006,7 +1021,7 @@ class SpotifyClient:
             return '\n'.join(playlists) if playlists else "No playlists found."
 
         except Exception as e:
-            logging.error(f"Error fetching user playlists: {str(e)}")
+            logger.error(f"Error fetching user playlists: {str(e)}")
             return "Error fetching user playlists."
 
     @playlists
@@ -1057,7 +1072,7 @@ class SpotifyClient:
             return '\n'.join(playlists) if playlists else "No playlists found."
 
         except Exception as e:
-            logging.error(f"Error fetching user playlists: {str(e)}")
+            logger.error(f"Error fetching user playlists: {str(e)}")
             return "Error fetching user playlists."
 
     @playlists
@@ -1100,7 +1115,7 @@ class SpotifyClient:
                 return f"Playlist '{playlist_name}' created successfully. ID: {playlist_id}, URL: {playlist_url}"
 
         except Exception as e:
-            logging.error(f"Error creating playlist: {str(e)}")
+            logger.error(f"Error creating playlist: {str(e)}")
             return "Error creating playlist."
 
     @playlists
@@ -1141,7 +1156,7 @@ class SpotifyClient:
             return '\n'.join(playlists_info)
 
         except Exception as e:
-            logging.error(f"Error fetching featured playlists: {str(e)}")
+            logger.error(f"Error fetching featured playlists: {str(e)}")
             return "Error fetching featured playlists."
 
     @playlists
@@ -1192,7 +1207,7 @@ class SpotifyClient:
             return "Custom cover image added to the playlist successfully."
 
         except Exception as e:
-            logging.error(f"Error adding custom cover image: {str(e)}")
+            logger.error(f"Error adding custom cover image: {str(e)}")
             return "Error adding custom cover image."
 
     @playlists
@@ -1212,7 +1227,7 @@ class SpotifyClient:
             Success or error message.
         """
         try:
-            logging.info(f"Arguments: {args}")
+            logger.info(f"Arguments: {args}")
             playlist_id = args.get("playlist_id") if args else None
             if not playlist_id:
                 return "Playlist ID is required."
@@ -1221,7 +1236,7 @@ class SpotifyClient:
             return "Unfollowed the playlist successfully."
 
         except Exception as e:
-            logging.error(f"Error unfollowing playlist: {str(e)}")
+            logger.error(f"Error unfollowing playlist: {str(e)}")
             return "Error unfollowing playlist."
 
     @tracks
@@ -1279,7 +1294,7 @@ class SpotifyClient:
             return result_str
 
         except Exception as e:
-            logging.error(f"Error fetching track: {str(e)}")
+            logger.error(f"Error fetching track: {str(e)}")
             return "Error fetching track."
 
     @tracks
@@ -1333,7 +1348,7 @@ class SpotifyClient:
             return '\n'.join(tracks_info)
 
         except Exception as e:
-            logging.error(f"Error fetching saved tracks: {str(e)}")
+            logger.error(f"Error fetching saved tracks: {str(e)}")
             return "Error fetching saved tracks."
 
     @tracks
@@ -1360,11 +1375,11 @@ class SpotifyClient:
             # Handle both single and multiple track IDs
             track_ids = [track_id] if isinstance(track_id, str) else track_id
             self.sp.current_user_saved_tracks_add(track_ids)
-            logging.info(f"Track(s) {track_ids} saved successfully.")
+            logger.info(f"Track(s) {track_ids} saved successfully.")
             return "Track saved successfully."
 
         except Exception as e:
-            logging.error(f"Error saving track: {str(e)}")
+            logger.error(f"Error saving track: {str(e)}")
             return "Error saving track."
 
     @tracks
@@ -1391,11 +1406,11 @@ class SpotifyClient:
             # Handle both single and multiple track IDs
             track_ids = [track_id] if isinstance(track_id, str) else track_id
             self.sp.current_user_saved_tracks_delete(track_ids)
-            logging.info(f"Track(s) {track_ids} removed successfully for the user.")
+            logger.info(f"Track(s) {track_ids} removed successfully for the user.")
             return f"{'Track' if len(track_ids) == 1 else 'Tracks'} removed successfully."
 
         except Exception as e:
-            logging.error(f"Error removing track(s): {str(e)}")
+            logger.error(f"Error removing track(s): {str(e)}")
             return "Error removing track(s)."
 
     @tracks
@@ -1429,11 +1444,11 @@ class SpotifyClient:
                 status = "saved" if is_saved[i] else "not saved"
                 result.append(f"Track {track} is {status}.")
             
-            logging.info(f"Checked saved status for tracks: {track_ids}")
+            logger.info(f"Checked saved status for tracks: {track_ids}")
             return '\n'.join(result)
 
         except Exception as e:
-            logging.error(f"Error checking saved track(s): {str(e)}")
+            logger.error(f"Error checking saved track(s): {str(e)}")
             return "Error checking saved track(s)."
 
     @tracks
@@ -1495,7 +1510,7 @@ class SpotifyClient:
             return result_str
 
         except Exception as e:
-            logging.error(f"Error fetching audio features: {str(e)}")
+            logger.error(f"Error fetching audio features: {str(e)}")
             return "Error fetching audio features."
 
     @albums
@@ -1549,7 +1564,7 @@ class SpotifyClient:
             return result_str
 
         except Exception as e:
-            logging.error(f"Error fetching album: {str(e)}")
+            logger.error(f"Error fetching album: {str(e)}")
             return "Error fetching album."
 
     @albums
@@ -1607,7 +1622,7 @@ class SpotifyClient:
             return '\n\n'.join(tracks_info)
 
         except Exception as e:
-            logging.error(f"Error fetching album tracks: {str(e)}")
+            logger.error(f"Error fetching album tracks: {str(e)}")
             return "Error fetching album tracks."
 
     @users
@@ -1657,7 +1672,7 @@ class SpotifyClient:
             return '\n'.join(top_items_info)
 
         except Exception as e:
-            logging.error(f"Error fetching top items: {str(e)}")
+            logger.error(f"Error fetching top items: {str(e)}")
             return "Error fetching top items."
 
     @users
@@ -1698,6 +1713,6 @@ class SpotifyClient:
             return result_str
 
         except Exception as e:
-            logging.error(f"Error fetching user profile: {str(e)}")
+            logger.error(f"Error fetching user profile: {str(e)}")
             return "Error fetching user profile."
 

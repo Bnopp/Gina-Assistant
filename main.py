@@ -8,7 +8,7 @@ def main() -> None:
 
     print(f"Gina - Version {Config.get_version()}")
 
-    assistant.set_persona(persona="Gina")
+    assistant.set_persona(persona="Spotina")
 
     user_input = input("User: ")
     while user_input != "exit":

@@ -1,6 +1,8 @@
+import json
 from logging import Logger
 from openai import OpenAI, Stream
 from config.settings import Config
+from collections import defaultdict
 from gina.decorators import singleton
 from gina.utils.logger import setup_logger
 from gina.utils.openai.persona import Persona, load_personas
@@ -60,6 +62,33 @@ class OpenAIService:
         """
         self.messages.append({"role": role, "content": message})
 
+    def _tool_list_to_tool_obj(self, tools):
+        # Initialize a dictionary with default values
+        tool_calls_dict = defaultdict(lambda: {"id": None, "function": {"arguments": "", "name": None}, "type": None})
+
+        # Iterate over the tool calls
+        for tool_call in tools:
+            # If the id is not None, set it
+            if tool_call.id is not None:
+                tool_calls_dict[tool_call.index]["id"] = tool_call.id
+
+            # If the function name is not None, set it
+            if tool_call.function.name is not None:
+                tool_calls_dict[tool_call.index]["function"]["name"] = tool_call.function.name
+
+            # Append the arguments
+            tool_calls_dict[tool_call.index]["function"]["arguments"] += tool_call.function.arguments
+
+            # If the type is not None, set it
+            if tool_call.type is not None:
+                tool_calls_dict[tool_call.index]["type"] = tool_call.type
+
+        # Convert the dictionary to a list
+        tool_calls_list = list(tool_calls_dict.values())
+
+        # Return the result
+        return {"tool_calls": tool_calls_list}
+
     def get_completion(self, model: str = Config.get_config_value("default_LLM"), stream_callback = None) -> str:
         """
         Send message to OpenAI API
@@ -68,10 +97,12 @@ class OpenAIService:
         stream: Stream = self.client.chat.completions.create(
             model=model, 
             messages=self.messages,
-            stream=True,
+            tools=self.tools,
+            stream=True
         )
 
         response: str = ""
+        tools: dict = []
 
         for chunk in stream:
             content = chunk.choices[0].delta.content
@@ -80,6 +111,42 @@ class OpenAIService:
 
                 if stream_callback:
                     stream_callback(content)
+            
+            if chunk.choices[0].delta.tool_calls:
+                tools += chunk.choices[0].delta.tool_calls
+
+        tools = self._tool_list_to_tool_obj(tools)
+        logger.debug(f"Tools: {tools}")
+
+        if len(tools['tool_calls']) > 0:
+            self.messages.append({
+                "role": "assistant",
+                "content": None,
+                "tool_calls": tools["tool_calls"]
+            })
+
+            tool_outputs: dict = []
+            for tool in tools['tool_calls']:
+                function_name:str = tool['function']['name']
+                function_args:str = tool['function']['arguments']
+
+                func: callable = self.function_dispatcher.get(function_name)
+
+                if func:
+                    output = func(json.loads(function_args))
+                    tool_outputs.append(output)
+                    logger.debug(f"Tool {function_name} executed with arguments {function_args} and returned {output}")
+                else:
+                    logger.error(f"Function {function_name} not found")
+                
+                self.messages.append({
+                    "role": "tool",
+                    "content": json.dumps(output),
+                    "name": function_name,
+                    "tool_call_id": tool['id']
+                })
+        else:
+            self.add_message(role="assistant", message=response)
 
         return response
 
