@@ -20,7 +20,7 @@ class GraphAuthenticator:
                 self.token_cache.deserialize(f.read())
         
         self.client = msal.PublicClientApplication(client_id=app_id, token_cache=self.token_cache)
-        self.token_reponse = None
+        self.token: dict = self.generate_token(app_id, scopes)
 
     def generate_token(self, app_id: str, scopes: list[str]) -> dict:
         self.token_cache = msal.SerializableTokenCache()
@@ -43,6 +43,8 @@ class GraphAuthenticator:
         with open("token_cache.json", "w") as f:
             f.write(self.token_cache.serialize())
         
+
+
         return token_response
 
 if __name__ == "__main__":
@@ -50,4 +52,3 @@ if __name__ == "__main__":
     scopes: list[str] = ["User.Read"]
 
     auth: GraphAuthenticator = GraphAuthenticator(app_id, scopes)
-    token: dict = auth.generate_token(app_id, scopes)

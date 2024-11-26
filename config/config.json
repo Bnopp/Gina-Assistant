@@ -1,8 +1,9 @@
 {
-    "version": "2.0.0-dev0",
+    "version": "2.1.0-dev0",
     "default_language": "en",
     "default_LLM": "gpt-4o",
     "personas_path": "gina/data/personas.json",
     "functions_path": "gina/utils/function_modules",
-    "log_level": "DEBUG"
+    "log_level": "DEBUG",
+    "graph_endpoint": "https://graph.microsoft.com/v1.0"
 }
