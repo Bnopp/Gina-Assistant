@@ -1,5 +1,5 @@
 {
-    "version": "1.1.0-dev0",
+    "version": "2.0.0-dev0",
     "default_language": "en",
     "default_LLM": "gpt-4o",
     "personas_path": "gina/data/personas.json",

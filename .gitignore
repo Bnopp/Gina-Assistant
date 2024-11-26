@@ -17,3 +17,6 @@ Thumbs.db
 
 # Ignore logs
 *.log
+
+# Ignore cache files
+*.cache
